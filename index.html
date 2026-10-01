@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lucky 1–80</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101820;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#17232e}
+.top{padding:18px 16px;background:#1f6f9f;display:flex;justify-content:space-between;align-items:center}
+.title{font-size:23px;font-weight:700}.points{background:#12384d;padding:8px 12px;border-radius:18px}
+.info{text-align:center;padding:15px 10px}.info b{color:#55c7ff}
+.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;padding:10px}
+.num{border:0;border-radius:9px;background:#273744;color:#fff;padding:11px 0;font-size:15px}
+.num.selected{background:#1f9d62;box-shadow:0 0 0 2px #63e6a0}
+.num.hit{background:#e7a928;color:#111}
+.controls{padding:12px 16px;position:sticky;bottom:0;background:#17232e}
+button.play{width:100%;border:0;border-radius:12px;padding:15px;background:#22a96b;color:#fff;font-size:18px;font-weight:700}
+button.play:disabled{opacity:.45}.draw{padding:14px 16px;text-align:center}.current{font-size:52px;font-weight:800;height:65px}
+.status{min-height:24px;color:#b8c6d1}.results{padding:0 16px 20px}.resultnums{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ball{width:34px;height:34px;border-radius:50%;background:#273744;display:flex;align-items:center;justify-content:center;font-weight:700}
+.ball.hit{background:#1f9d62}.small{font-size:13px;color:#9eb0bd}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="title">🎱 Lucky 1–80</div><div class="points">⭐ <span id="points">1000</span></div></div>
+  <div class="info">2–10 ቁጥሮች ምረጥ • <b id="count">0</b>/10</div>
+  <div id="grid" class="grid"></div>
+  <div class="draw">
+    <div class="small" id="drawLabel">DRAW ለመጀመር ቁጥሮችን ምረጥ</div>
+    <div class="current" id="current">—</div>
+    <div class="status" id="status"></div>
+  </div>
+  <div class="results">
+    <div style="text-align:center;margin-bottom:8px;font-weight:700">20 የDRAW ቁጥሮች</div>
+    <div id="results" class="resultnums"></div>
+  </div>
+  <div class="controls"><button id="play" class="play">DRAW</button></div>
+</div>
+<script>
+const grid=document.getElementById('grid'), countEl=document.getElementById('count');
+const current=document.getElementById('current'), status=document.getElementById('status');
+const results=document.getElementById('results'), play=document.getElementById('play');
+const pointsEl=document.getElementById('points');
+let selected=new Set(), drawing=false;
+
+for(let i=1;i<=80;i++){
+  const b=document.createElement('button'); b.className='num'; b.textContent=i;
+  b.onclick=()=>{
+    if(drawing)return;
+    if(selected.has(i)){selected.delete(i);b.classList.remove('selected')}
+    else if(selected.size<10){selected.add(i);b.classList.add('selected')}
+    countEl.textContent=selected.size;
+    play.disabled=selected.size<2;
+  };
+  grid.appendChild(b);
+}
+play.disabled=true;
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function draw(){
+  if(selected.size<2 || drawing)return;
+  drawing=true; play.disabled=true;
+  document.querySelectorAll('.num').forEach(b=>b.disabled=true);
+  results.innerHTML=''; current.textContent='—'; status.textContent='DRAW በመሄድ ላይ...';
+  const pool=Array.from({length:80},(_,i)=>i+1);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  const drawn=pool.slice(0,20), balls=[];
+  for(let i=0;i<20;i++){
+    const n=drawn[i]; current.textContent=n;
+    const ball=document.createElement('div'); ball.className='ball'+(selected.has(n)?' hit':''); ball.textContent=n;
+    results.appendChild(ball); balls.push(ball);
+    await sleep(1000);
+  }
+  const hits=drawn.filter(n=>selected.has(n)).length;
+  status.innerHTML=`🎯 Match: <b>${hits}</b> / ${selected.size}`;
+  current.textContent=hits>0?'🎉':'—';
+  pointsEl.textContent=Number(pointsEl.textContent)+hits*50;
+  drawing=false;
+  selected=new Set();
+  document.querySelectorAll('.num').forEach(b=>{b.disabled=false;b.classList.remove('selected')});
+  countEl.textContent=0; play.disabled=true;
+}
+play.onclick=draw;
+</script>
+</body>
+</html>
